@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reinforcement Learning for Looped Language Models: A Walkthrough</title>
+<style>
+  :root {
+    --text: #1a1a1a;
+    --muted: #5a5a5a;
+    --faint: #8a8a8a;
+    --line: rgba(0,0,0,0.1);
+    --line-strong: rgba(0,0,0,0.2);
+    --bg: #fefefe;
+    --accent: #d14520;
+    --teal: #0f6e56;
+    --purple: #534ab7;
+    --amber: #ba7517;
+    --code-bg: #f4f2ed;
+  }
+  * { box-sizing: border-box; }
+  body {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+    font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+  }
+  header { margin-bottom: 40px; }
+  h1 {
+    font-size: 36px;
+    line-height: 1.15;
+    font-weight: 700;
+    margin: 0 0 14px;
+    letter-spacing: -0.015em;
+  }
+  .subtitle {
+    font-size: 19px;
+    color: var(--muted);
+    font-style: italic;
+    margin: 0 0 20px;
+    line-height: 1.4;
+  }
+  .byline {
+    font-size: 14px;
+    color: var(--faint);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 0;
+    margin: 24px 0 0;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 56px 0 16px;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 32px 0 12px;
+  }
+  h4 {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 24px 0 10px;
+    color: var(--text);
+  }
+  p { margin: 0 0 18px; }
+  p + p { text-indent: 1.2em; }
+  a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 16px 18px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin: 20px 0;
+  }
+  pre code { background: none; padding: 0; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    margin: 24px 0;
+    padding: 4px 20px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  blockquote p + p { text-indent: 0; }
+  .math-block {
+    font-family: 'Cambria Math', 'Latin Modern Math', Cambria, Georgia, serif;
+    font-style: italic;
+    background: var(--code-bg);
+    padding: 16px 20px;
+    border-radius: 4px;
+    margin: 16px 0;
+    font-size: 17px;
+    overflow-x: auto;
+    line-height: 2.4;
+    letter-spacing: 0.01em;
+  }
+  .math-block sub, .math-block sup {
+    font-size: 0.70em;
+    line-height: 0;
+  }
+  .math-block sup { vertical-align: 0.6em; }
+  .math-block sub { vertical-align: -0.35em; }
+  .math-inline {
+    font-family: 'Cambria Math', 'Latin Modern Math', Cambria, Georgia, serif;
+    font-style: italic;
+  }
+  .math-inline sub, .math-inline sup {
+    font-size: 0.70em;
+    line-height: 0;
+  }
+  .callout {
+    background: #fef9f2;
+    border: 1px solid #f0d9a8;
+    border-left: 3px solid var(--amber);
+    padding: 16px 20px;
+    border-radius: 4px;
+    margin: 24px 0;
+    font-size: 16px;
+  }
+  .callout-title {
+    font-weight: 700;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 6px;
+  }
+  .figure {
+    margin: 32px 0;
+    text-align: center;
+  }
+  .figure svg { max-width: 100%; height: auto; }
+  .figure-caption {
+    font-size: 14px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 10px;
+    text-align: center;
+    font-family: Georgia, serif;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 15px;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  th {
+    font-weight: 600;
+    border-bottom: 1.5px solid var(--line-strong);
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .highlight-row { background: #fef9f2; }
+  .kicker {
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .sep {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 48px auto;
+    width: 60%;
+  }
+  .ref-list {
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .ref-list li { margin-bottom: 8px; }
+  .tldr {
+    background: #f4f2ed;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 24px 0 32px;
+    font-size: 15.5px;
+    font-family: -apple-system, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+  .tldr strong { color: var(--text); }
+  ul, ol { padding-left: 1.4em; }
+  ul.tight li, ol.tight li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">AI research · post-training · architecture</div>
+  <h1>Reinforcement Learning for Looped Language Models: A Walkthrough</h1>
+
+  <div class="byline">Anushka · April 2026 · ~20 min read</div>
+</header>
+
+<div class="tldr">
+<strong>TL;DR.</strong> <strong>(1)</strong> Why looped language models are worth caring about, and why chain-of-thought has structural limits they route around. <strong>(2)</strong> What a looped model is. <strong>(3)</strong> Why training them reliably took so long, the three main failure modes, and what Parcae's stability fix provides. <strong>(4)</strong> Why GRPO fails on looped models. <strong>(5)</strong> How RLTT fixes it. <strong>(6)</strong> Where the space is headed.
+</div>
+
+<h2>1. The problem with making models think harder</h2>
+
+<p>There's a surprisingly short list of ways to make a language model better at hard reasoning tasks. Make it bigger — more parameters, more training data. Or make it talk more — chain-of-thought prompting, then RLVR-style training that teaches the model to produce long deliberative traces before answering. Both approaches work well. Both are expensive.</p>
+
+<p>But "make it talk more" carries a hidden tax that's worth understanding before we get to the alternative. When a model reasons by writing out its thinking — chain-of-thought — every step of that reasoning consumes context window. A model working through a hard proof might spend thousands of tokens just thinking before it gets to the answer. For long-horizon tasks like multi-document synthesis, extended agentic work, or competition-level math, that quickly becomes a real constraint. Context is finite, attention is <span class="math-inline">O(N²)</span> in sequence length, and eventually you hit the wall.</p>
+
+<p>There's also a subtler issue: token-level reasoning is committed reasoning. Every step of a chain-of-thought gets discretized into words. The model can't silently revise an earlier step — it has to write new text that contradicts it. That's a strange way to think. Human reasoning isn't like that; we revise freely in whatever pre-verbal space cognition happens in, and only commit to language when we're ready. Forcing all reasoning through tokens is lossy by design.</p>
+
+<p>A third issue is that some reasoning resists verbalization entirely. There's good evidence that models doing spatial or numerical reasoning in latent space — rotating shapes, tracking quantities — are doing something that would be awkward or impossible to express as text. The language bottleneck filters it out.</p>
+
+<p>The alternative that's been getting serious traction since 2025: don't make the model bigger or its outputs longer. Make it <em>loop</em>. Take a stack of transformer layers and apply it to its own output, two or four or eight times, before emitting the next token. The compute graph gets deeper; the parameter count doesn't move.</p>
+
+<p>This is latent recurrence — reasoning that happens inside the forward pass, in continuous space, before any token is committed to. It doesn't pay the token-count tax. It doesn't hit the context wall. And there's now good empirical evidence it works: a 1.4B looped model matching a dense 4B baseline on hard reasoning, with a 2.6B model edging out 8B baselines. Latent recurrence and chain-of-thought are genuinely complementary — they solve different sub-problems, and the best results so far combine both.</p>
+
+<p>But training looped language models reliably is harder than it sounds. The rest of this post is about why.</p>
+
+<h2>2. What a looped language model actually is</h2>
+
+<p>Take a normal decoder-only transformer — a stack of <span class="math-inline">L</span> layers, tokens in at the bottom, logits out at the top. A looped transformer ties weights across depth and reuses the same stack multiple times. With <span class="math-inline">M<sub>L</sub></span> denoting the shared-weight stack:</p>
+
+<div class="math-block">
+F<sup>(t)</sup>(x) = lmhead ∘ (M<sub>L</sub> ∘ M<sub>L</sub> ∘ ⋯ ∘ M<sub>L</sub>) ∘ emb(x)    [t iterations]
+</div>
+
+<p>When <span class="math-inline">t=1</span> you have a normal transformer. When <span class="math-inline">t=4</span>, the same <span class="math-inline">L</span> layers process the hidden state four times before the LM head reads it. Parameter count is fixed; compute scales linearly with <span class="math-inline">t</span>.</p>
+
+<p>The architecture that most recent work builds on splits this into three clean pieces. A <strong>prelude</strong> <span class="math-inline">P</span> embeds the input tokens into a latent space once. A <strong>recurrent block</strong> <span class="math-inline">R</span> is applied repeatedly to a hidden state <span class="math-inline">s<sub>t</sub></span>, with the prelude's output <span class="math-inline">e</span> re-injected at each iteration so the model keeps seeing the original input. A <strong>coda</strong> <span class="math-inline">C</span> reads the final hidden state and produces the output distribution. Critically, only <span class="math-inline">R</span> gets reused — the prelude and coda run once each.</p>
+
+<div class="figure" id="fig-architecture"></div>
+<p class="figure-caption">Figure 1. The three-stage looped architecture. The prelude embeds input once. The recurrent block iterates <em>r</em> times with input re-injected at each step (dashed arrows). The coda decodes the final hidden state. Because only <em>R</em>'s weights are shared, parameter count is independent of <em>r</em> — at <em>r</em> = 32, the model unrolls to 132 effective layers with only 8 unique weight sets.</p>
+
+<p>Three equally valid ways to see what this buys you:</p>
+
+<p><strong>Parameter sharing.</strong> You get the FLOPs of a <span class="math-inline">tL</span>-layer model with the memory footprint of an <span class="math-inline">L</span>-layer model. Useful if you're compute-rich but memory-constrained.</p>
+
+<p><strong>Latent reasoning.</strong> Each pass through the loop is a step of "thinking" in continuous space. The hidden state at iteration <span class="math-inline">k</span> is the model's <span class="math-inline">k</span>-th refined representation of the problem. This is test-time compute scaling that doesn't pay the token tax that chain-of-thought charges.</p>
+
+<p><strong>Dynamical system.</strong> This is the framing that matters most for everything that follows. The recurrent block <span class="math-inline">R</span> is a map on hidden-state space: <span class="math-inline">R: ℝ<sup>n·h</sup> → ℝ<sup>n·h</sup></span>. Running the loop <span class="math-inline">t</span> times means iterating that map:</p>
+
+<div class="math-block">
+s<sub>k+1</sub> = R(s<sub>k</sub>, e),   s<sub>0</sub> ~ 𝒩(0, σ²I)
+</div>
+
+<p>This is a discrete-time dynamical system. Its behavior across iterations can be one of three things: convergent (the hidden state settles toward a stable point), divergent (it blows up), or oscillatory (it cycles without converging). All three show up in practice, and two of them are catastrophic for training. The looped transformer has the same stability problems as RNNs — it's just dressed in attention clothing.</p>
+
+<p>There's also a clean empirical fact about what looping actually does to a model's capabilities. Recurrence doesn't increase raw knowledge storage — it's still roughly 2 bits per parameter, the same as a dense transformer. What it dramatically improves is knowledge <em>manipulation</em>: multi-hop composition, fact retrieval-and-application, the kind of reasoning where you need to combine things you know rather than just retrieve them. That's exactly what you'd expect from a system where each iteration refines a representation rather than adds more storage. The dynamics transform information; they don't hoard it.</p>
+
+<p>One practical note on inference: each recurrent step has its own KV cache, so naively the memory cost scales with loop count. The standard fix — keeping only the KV cache from the final loop of each prefix token — recovers near-baseline performance at 25% the memory. Worth flagging for a reason we'll return to: the internal trajectory of hidden states across loops is real, computed information that's normally discarded. That turns out to matter a lot for RL.</p>
+
+<h2>3. Why training looped LMs is so hard</h2>
+
+<p>The idea of reusing transformer weights across depth is not new. So why did it take so long to produce a looped model that actually beats a dense transformer of similar scale? Because training them reliably at scale was routinely catastrophic, and for a long time nobody had a principled explanation of why. Three failure modes dominate.</p>
+
+<h3>Token-dimension collapse</h3>
+
+<p>After a few iterations, the hidden states across all token positions become identical. The matrix <span class="math-inline">H ∈ ℝ<sup>n×d</sup></span> goes rank-1: every row is the same vector, regardless of what token it came from.</p>
+
+<p>Why this happens: the per-position FFN is identical across token positions, so if per-token input signals are weak, it pushes every position toward the same manifold. Once representations align even slightly, attention accelerates the collapse — attending to near-identical keys produces near-uniform weights, which pool near-identical values into near-identical outputs. The rank-1 state is a stable fixed point (<span class="math-inline">R(H) = H</span>) that's easy for the optimizer to find and hard to escape.</p>
+
+<h3>Ignored recurrent state</h3>
+
+<p>The model learns to ignore the incoming hidden state <span class="math-inline">s<sub>t-1</sub></span> and effectively recompute from scratch at every iteration. The canonical symptom: intermediate states at loop <span class="math-inline">r</span> become approximately identical to those at loop 1, diagnosable by checking cosine similarity across iterations — if they're near-1, the recurrence is degenerate.</p>
+
+<p>Why it happens: early in training, the recurrent state is near-random — it started from Gaussian noise and hasn't become informative yet. Conditioning on it hurts the loss, so the optimizer zeros that pathway out. Once zeroed, no gradient signal tells it to reopen.</p>
+
+<h3>Residual explosion</h3>
+
+<p>The hidden state magnitude grows unboundedly across loop iterations, eventually producing NaNs and crashing the run. Unlike the previous two, this failure doesn't happen at initialization — it emerges late in training, often hundreds of thousands of steps in, and gives no warning.</p>
+
+<p>Why it happens: looping is linear dynamics plus a nonlinearity. The linear part is governed by an effective matrix <span class="math-inline">Ā</span> that combines the recurrent weights and input injection. If <span class="math-inline">Ā</span> has spectral radius <span class="math-inline">ρ(Ā) &gt; 1</span>, any perturbation to the hidden state is amplified by roughly <span class="math-inline">ρ<sup>t</sup></span> after <span class="math-inline">t</span> iterations. At <span class="math-inline">ρ = 1.01</span> and <span class="math-inline">t = 32</span>, that's 1.37× amplification across the 32 loops of one forward pass — manageable early, but as the optimizer drifts <span class="math-inline">ρ</span> upward, the exponent compounds catastrophically over millions of training steps. Prior architectures left <span class="math-inline">Ā</span> unconstrained, so whether a run converged or diverged was a lottery over optimizer trajectory.</p>
+
+<p>The practitioners who ran into these problems mostly patched around them: reduce the loop count, enlarge the batch, adjust the learning rate schedule, add more normalization. The patches worked well enough to ship models, but they had to be retuned from scratch at every new scale. There was no underlying principle to carry forward.</p>
+
+<p>A 2026 paper called Parcae (<a href="https://arxiv.org/abs/2604.12946">arXiv:2604.12946</a>) finally provided one, recasting looping as a dynamical system and showing that in the linearized dynamics, prior architectures were either permanently on the boundary between convergent and divergent (spectral radius exactly 1), or left that boundary completely unconstrained so training was a lottery. Parcae's fix — borrowing a parameterization from the state-space model literature (S4, Mamba) — makes <span class="math-inline">ρ(Ā) &lt; 1</span> a hard constraint of the parameterization rather than a property the optimizer has to maintain, guaranteeing stability by construction regardless of learning rate, batch size, or initialization. The payoff: up to 6.3% lower validation perplexity, significantly more robust training, and — for the first time — predictable scaling laws showing that loop count and token count should scale in tandem with compute, with loop count growing roughly as <span class="math-inline">r* ∝ C<sup>0.40</sup></span> (Parcae, arXiv:2604.12946).</p>
+
+<h2>4. Why standard RLVR breaks on looped models</h2>
+
+<p>Now that we've seen some of the instabilities that arise in training looped models, a natural question is whether these extend to post-training — and specifically to the RL recipe that dramatically improved dense models.</p>
+
+<p>RLVR — and specifically GRPO, the dominant variant — is the standard post-training recipe for reasoning. The standard GRPO objective is:</p>
+
+<div class="math-block">
+∇<sub>θ</sub> J<sub>GRPO</sub>(θ) = 𝔼[ (1/g) Σ<sub>i</sub> (1/|y<sub>i</sub>|) Σ<sub>j</sub> ∇<sub>θ</sub> log P<sub>θ</sub>(y<sub>i,j</sub>|x, y<sub>i,&lt;j</sub>) · Â<sub>i</sub> ]
+</div>
+
+<p>where <span class="math-inline">g</span> is the number of sampled rollouts, <span class="math-inline">Â<sub>i</sub> = (r<sub>i</sub> − r̄) / std(r)</span> is the group-normalized advantage, and the model is pushed toward outputs with higher reward on verifiable tasks (math, code).</p>
+
+<p>The primary reason is the credit assignment mismatch.</p>
+
+<p>Let <span class="math-inline">h<sub>j</sub><sup>(t)</sup></span> be the hidden state for the <span class="math-inline">j</span>-th output token after loop iteration <span class="math-inline">t</span>, and <span class="math-inline">g</span> the LM head. The overall policy of a looped model is:</p>
+
+<div class="math-block">
+π<sub>θ</sub>(y|x) = Π<sub>j=1</sub><sup>L</sup> P<sub>θ</sub><sup>(T<sub>max</sub>)</sup>(y<sub>j</sub>|x, y<sub>&lt;j</sub>)
+</div>
+
+<div class="math-block">
+P<sub>θ</sub><sup>(T<sub>max</sub>)</sup>(y<sub>j</sub>|x, y<sub>&lt;j</sub>) = Softmax(g(h<sub>j</sub><sup>(T<sub>max</sub>)</sup>))
+</div>
+
+<p>Sampling uses only the terminal-loop distribution <span class="math-inline">P<sub>θ</sub><sup>(T<sub>max</sub>)</sup></span>. The intermediate distributions from loops 1 through <span class="math-inline">T<sub>max</sub>-1</span> exist and are computed, but are treated as unobserved — the forward pass throws them away.</p>
+
+<p>Standard REINFORCE-style policy gradient, for <span class="math-inline">g</span> rollouts with group-normalized advantages <span class="math-inline">Â<sub>i</sub></span>, updates:</p>
+
+<div class="math-block">
+∇<sub>θ</sub> J<sub>GRPO</sub>(θ) = 𝔼[ (1/g) Σ<sub>i</sub> (1/|y<sub>i</sub>|) Σ<sub>j</sub> ∇<sub>θ</sub> log P<sub>θ</sub><sup>(T<sub>max</sub>)</sup>(y<sub>i,j</sub>|x, y<sub>i,&lt;j</sub>) · Â<sub>i</sub> ]
+</div>
+
+<p>Only <span class="math-inline">log P<sub>θ</sub><sup>(T<sub>max</sub>)</sup></span> gets updated. The gradient flows exclusively through the terminal-loop distribution. Loops 1 through <span class="math-inline">T<sub>max</sub>-1</span> — which did the majority of the actual computation — receive no direct gradient signal from the reward at all.</p>
+
+<p>This is the credit-assignment bottleneck. It's like giving a student feedback only on their final answer when all the meaningful work happened in the intermediate steps. The intermediate "thinking" steps learn nothing from whether the answer was right.</p>
+
+<p>There's a related infrastructure issue worth flagging: adaptive early-exit makes execution depth vary per input, which vLLM and SGLang don't support — their batched-decoding optimizations assume a fixed computation path. This hit concretely in early RL attempts, with sampling at one depth and loss computed at another creating an off-policy mismatch. You can sidestep it by fixing the loop count, which is what RLTT does — but then you're no longer exploiting the adaptive-depth feature. RLTT fixes credit assignment; making adaptive halting work under RL is still open.</p>
+
+<h2>5. RLTT — making RLVR work for looped LMs</h2>
+
+<p>Reward Latent Thought Trajectories, or RLTT (Williams &amp; Tureci, Princeton, February 2026; <a href="https://arxiv.org/abs/2602.10520">arXiv:2602.10520</a>), is the fix. The mechanism fits in one equation. Where standard policy gradient has <span class="math-inline">∇<sub>θ</sub> log P<sub>θ</sub><sup>(T<sub>max</sub>)</sup></span>, RLTT replaces it with a weighted sum across all loops:</p>
+
+<div class="math-block">
+∇<sub>θ</sub> J<sub>RLTT</sub>(θ) = 𝔼<sub>x,y</sub>[<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(1/g) Σ<sub>i=1</sub><sup>g</sup> (1/|y<sub>i</sub>|) Σ<sub>j</sub><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Σ<sub>t=1</sub><sup>T<sub>max</sub></sup> ω<sub>t</sub> · ∇<sub>θ</sub> log P<sub>θ</sub><sup>(t)</sup>(y<sub>i,j</sub> | x, y<sub>i,&lt;j</sub>) · Â<sub>i</sub><br>
+]
+</div>
+
+<div class="figure" id="fig-credit"></div>
+<p class="figure-caption">Figure 2. GRPO vs RLTT credit assignment. Left: GRPO connects reward only to the final loop's next-token distribution. Loops 1 through T<sub>max</sub>−1 are along for the ride but learn nothing from the outcome. Right: RLTT connects reward to every loop's distribution via a weighted sum. Every latent refinement step gets explicit credit.</p>
+
+<p>The extra inner sum over <span class="math-inline">t</span> is the whole idea. Every loop iteration contributes its own log-probability gradient, weighted by <span class="math-inline">ω<sub>t</sub></span>, and the same advantage <span class="math-inline">Â<sub>i</sub></span> multiplies the lot. The reward now flows through every intermediate latent thought distribution, not just the terminal one.</p>
+
+<p>The weights <span class="math-inline">ω<sub>t</sub></span> are where design choices live. Uniform weighting (<span class="math-inline">ω<sub>t</sub> = 1/T<sub>max</sub></span>) treats all loops equally. RLTT's reported experiments use <em>exit-probability weighting</em>: loops the model itself deemed low-confidence (low exit probability) get proportionally less credit. The model's own uncertainty becomes the curriculum.</p>
+
+<h3>The results</h3>
+
+<p>All comparisons are compute-matched against GRPO on the same base model — same rollouts, optimizer, reward, and training data (MATH train split only):</p>
+
+<table>
+<thead><tr><th>Benchmark</th><th class="num">Base</th><th class="num">+ SFT</th><th class="num">+ GRPO</th><th class="num">+ RLTT</th><th class="num">RLTT vs GRPO</th></tr></thead>
+<tbody>
+<tr><td>MATH-500</td><td class="num">67.8</td><td class="num">58.2</td><td class="num">71.6</td><td class="num">86.0</td><td class="num">+14.4</td></tr>
+<tr><td>AIME24</td><td class="num">13.3</td><td class="num">13.3</td><td class="num">16.7</td><td class="num">33.3</td><td class="num">+16.6</td></tr>
+<tr><td>BeyondAIME</td><td class="num">5.0</td><td class="num">6.0</td><td class="num">6.0</td><td class="num">16.0</td><td class="num">+10.0</td></tr>
+<tr class="highlight-row"><td><strong>GSM8K</strong></td><td class="num">58.5</td><td class="num">59.6</td><td class="num">59.7</td><td class="num"><strong>94.0</strong></td><td class="num"><strong>+34.3</strong></td></tr>
+<tr><td>Math avg</td><td class="num">36.2</td><td class="num">34.3</td><td class="num">38.5</td><td class="num">57.3</td><td class="num">+18.8</td></tr>
+</tbody>
+</table>
+
+<p>Transfer to non-math benchmarks — with training on MATH only:</p>
+
+<table>
+<thead><tr><th>Benchmark</th><th class="num">+ GRPO</th><th class="num">+ RLTT</th><th class="num">RLTT vs GRPO</th></tr></thead>
+<tbody>
+<tr><td>ARC-C</td><td class="num">93.7</td><td class="num">94.4</td><td class="num">+0.7</td></tr>
+<tr><td>MMLU-ST</td><td class="num">86.1</td><td class="num">89.6</td><td class="num">+3.5</td></tr>
+<tr class="highlight-row"><td><strong>GPQA</strong></td><td class="num">19.7</td><td class="num"><strong>38.4</strong></td><td class="num"><strong>+18.7</strong></td></tr>
+<tr><td>MBPP</td><td class="num">61.3</td><td class="num">64.6</td><td class="num">+3.3</td></tr>
+<tr><td>Non-math avg</td><td class="num">65.2</td><td class="num">71.8</td><td class="num">+6.6</td></tr>
+</tbody>
+</table>
+
+<h3>Why it works</h3>
+
+<p>Four observations from the training dynamics tell a coherent story.</p>
+
+<p><strong>Reward diverges early.</strong> RLTT pulls ahead of GRPO within the first few dozen steps and the gap widens monotonically. That's the signature of better credit assignment — RLTT sends meaningful gradients to intermediate loops immediately, while GRPO has to hope those loops improve indirectly through the terminal-loop gradient.</p>
+
+<p><strong>Response length shrinks.</strong> No brevity incentive exists in the reward function, yet RLTT-trained models steadily converge to shorter responses than GRPO. The interpretation: when reward is distributed across the latent trajectory, the model is pushed to converge to correct answers <em>inside the recurrence</em>. Less token-level deliberation is needed because the loops are doing more of the work, with training time dropping as a downstream effect. This is precisely the payoff that motivated looped architectures in the first place — and it only materializes when the RL recipe actually rewards the latent work.</p>
+
+<p><strong>Entropy drops in a controlled way.</strong> Output token entropy decreases faster under RLTT than GRPO, but Pass@k analysis shows diversity holds up. What's happening is that as correct reasoning trajectories stabilize, fewer alternatives remain plausible. Controlled confidence, not degeneration.</p>
+
+<p><strong>The biggest wins cluster on hard, token-hungry tasks.</strong> AIME24, BeyondAIME, and GPQA are exactly the benchmarks where GRPO most often runs out of context before arriving at an answer. RLTT's improvements are largest there because RLTT trains policies that reach the answer with fewer output tokens to spare.</p>
+
+<h2>6. Where this leaves us</h2>
+
+<p><strong>Looping is a genuine third scaling axis.</strong> Parameter-efficiency numbers are real, scaling laws are predictable (<span class="math-inline">r* ∝ C<sup>0.40</sup></span>), and compute spent on recurrence depth follows power-law returns alongside parameters and data. But raw depth saturates near the trained loop count — the real gains come from looping combined with the right training recipe.</p>
+
+<p><strong>Why recurrence biases toward better knowledge manipulation.</strong> Knowledge capacity is bounded by parameter count — looping doesn't change that. What looping gives you is the ability to reuse that knowledge at every iteration: retrieving relevant facts in one loop, applying structured procedures in the next, composing across hops. Storage stays the same; what changes is how many times the model gets to consult and combine what's already there. A deeper conjecture: parameter sharing enforces that the same weights must work at every loop, which sharply reduces the hypothesis class the optimizer searches over. This may explain why looped models often learn manipulation tasks from fewer samples than iso-FLOP dense counterparts.</p>
+
+<p><strong>RL for looped LMs is an active frontier.</strong> RLTT's trajectory-wide credit assignment is the cleanest result so far, but it's one answer to a question the field is only just starting to ask: how do you reward thinking that was never verbalized? LSRL (Ren, EMNLP 2025) takes a different angle — decoding each intermediate latent state and scoring it with a process-reward model, getting +4.27 points on GSM8K from 500 examples on a single GPU. Both approaches agree that terminal-only credit assignment is the bottleneck; they disagree on what to do about it. Expect more work here over the next year.</p>
+
+<p><strong>Open questions.</strong> Two stand out. First, upcycled RLMs: dense pretrain, convert to looped, then RL-train. This costs less than training looped from scratch and more than fine-tuning the dense base directly — but does the looping actually help at matched post-training compute? Is upcycling worth it if you already have a strong dense checkpoint? Second, generality of trajectory-level credit assignment: RLTT modifies the GRPO gradient, but the same fix should extend to DAPO, PPO, RLOO, and group-relative variants. If it does, most of the open-source RL stack becomes RLM-compatible with one equation per algorithm — but this hasn't been systematically tested.</p>
+
+
+
+<hr class="sep">
+
+<h3>References</h3>
+<ol class="ref-list">
+<li>Zhu, R.-J., Wang, Z., Hua, K., et al. (2025). Scaling Latent Reasoning via Looped Language Models (Ouro). <a href="https://arxiv.org/abs/2510.25741">arXiv:2510.25741</a>.</li>
+<li>Geiping, J., McLeish, S., Jain, N., et al. (2025). Scaling up Test-Time Compute with Latent Reasoning: A Recurrent Depth Approach (Huginn). NeurIPS 2025. <a href="https://arxiv.org/abs/2502.05171">arXiv:2502.05171</a>.</li>
+<li>Prairie, H., Novack, Z., Berg-Kirkpatrick, T., &amp; Fu, D. Y. (2026). Parcae: Scaling Laws For Stable Looped Language Models. <a href="https://arxiv.org/abs/2604.12946">arXiv:2604.12946</a>.</li>
+<li>Williams, J. &amp; Tureci, E. (2026). Prioritize the Process, Not Just the Outcome: Rewarding Latent Thought Trajectories Improves Reasoning in Looped Language Models (RLTT). <a href="https://arxiv.org/abs/2602.10520">arXiv:2602.10520</a>.</li>
+<li>Saunshi, N., Dikkala, N., Li, Z., Kumar, S., &amp; Reddi, S. J. (2025). Reasoning with Latent Thoughts: On the Power of Looped Transformers. ICLR 2025. <a href="https://arxiv.org/abs/2502.17416">arXiv:2502.17416</a>.</li>
+<li>Xu, K. &amp; Sato, I. (2025). On Expressive Power of Looped Transformers: Theoretical Analysis and Enhancement via Timestep Encoding. ICML 2025. <a href="https://arxiv.org/abs/2410.01405">arXiv:2410.01405</a>.</li>
+<li>Lu et al. (2025). Latent Chain-of-Thought? Decoding the Depth-Recurrent Transformer. <a href="https://arxiv.org/abs/2507.02199">arXiv:2507.02199</a>.</li>
+<li>Ren (2025). LSRL: Process-Supervised GRPO on Latent Recurrent States Improves Mathematical Reasoning. OpenReview NcrDaFJfQk.</li>
+</ol>
+
+<script>
+const FIG_ARCH = `<svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Three-stage looped architecture</title>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5a5a5a" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<rect x="30" y="100" width="100" height="56" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+<text x="80" y="122" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#2C2C2A">input x</text>
+<text x="80" y="140" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#5F5E5A">tokens</text>
+<rect x="170" y="90" width="120" height="76" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="230" y="115" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#0C447C">prelude P</text>
+<text x="230" y="134" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#185FA5">embed to e</text>
+<text x="230" y="152" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#185FA5">runs once</text>
+<rect x="330" y="80" width="150" height="96" rx="12" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="405" y="104" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#04342C">recurrent R</text>
+<text x="405" y="124" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#085041">shared weights</text>
+<text x="405" y="142" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#085041">iterate r times</text>
+<text x="405" y="160" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#085041">4 layers</text>
+<rect x="520" y="90" width="120" height="76" rx="10" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="580" y="115" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#26215C">coda C</text>
+<text x="580" y="134" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#3C3489">decode to logits</text>
+<text x="580" y="152" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#3C3489">runs once</text>
+<line x1="130" y1="128" x2="166" y2="128" stroke="#5a5a5a" stroke-width="1.5" marker-end="url(#a1)"/>
+<line x1="290" y1="128" x2="326" y2="128" stroke="#5a5a5a" stroke-width="1.5" marker-end="url(#a1)"/>
+<line x1="480" y1="128" x2="516" y2="128" stroke="#5a5a5a" stroke-width="1.5" marker-end="url(#a1)"/>
+<path d="M475 170 Q 510 215 405 215 Q 340 215 340 180" fill="none" stroke="#0F6E56" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#a1)"/>
+<text x="405" y="232" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#0F6E56">loop: h_{t+1} = R(h_t, e) with e re-injected every step</text>
+<path d="M240 165 Q 280 215 400 215" fill="none" stroke="#185FA5" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a1)"/>
+<text x="310" y="208" font-family="Georgia, serif" font-size="11" fill="#185FA5">input injection</text>
+<rect x="30" y="30" width="620" height="40" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/>
+<text x="340" y="54" text-anchor="middle" font-family="Georgia, serif" font-size="14" fill="#633806">effective depth = 2 + 4·r + 2  · at r=32, unrolls to 132 layers with only 8 unique weight sets</text>
+</svg>`;
+
+
+const FIG_CREDIT = `<svg viewBox="0 0 680 400" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>GRPO vs RLTT credit assignment</title>
+<defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+<text x="170" y="28" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#2C2C2A">GRPO — terminal-only credit</text>
+<text x="510" y="28" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#2C2C2A">RLTT — trajectory-wide credit</text>
+<rect x="60" y="60" width="60" height="40" rx="6" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+<text x="90" y="85" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#2C2C2A">loop 1</text>
+<rect x="60" y="120" width="60" height="40" rx="6" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+<text x="90" y="145" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#2C2C2A">loop 2</text>
+<rect x="60" y="180" width="60" height="40" rx="6" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+<text x="90" y="205" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#2C2C2A">loop 3</text>
+<rect x="60" y="240" width="60" height="40" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="1"/>
+<text x="90" y="265" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="500" fill="#712B13">loop T</text>
+<rect x="200" y="240" width="100" height="40" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="0.5"/>
+<text x="250" y="265" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#993C1D">P^(T) output</text>
+<rect x="200" y="320" width="100" height="40" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/>
+<text x="250" y="345" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#633806">reward</text>
+<line x1="120" y1="260" x2="196" y2="260" stroke="#D85A30" stroke-width="2" marker-end="url(#a3)"/>
+<line x1="250" y1="316" x2="250" y2="284" stroke="#D85A30" stroke-width="2" marker-end="url(#a3)"/>
+<text x="80" y="310" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#888780" font-style="italic">no gradient</text>
+<text x="180" y="370" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#993C1D" font-style="italic">only loop T gets ∇ from reward</text>
+<rect x="400" y="60" width="60" height="40" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="430" y="85" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#0C447C">loop 1</text>
+<rect x="400" y="120" width="60" height="40" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="430" y="145" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#0C447C">loop 2</text>
+<rect x="400" y="180" width="60" height="40" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="430" y="205" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#0C447C">loop 3</text>
+<rect x="400" y="240" width="60" height="40" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+<text x="430" y="265" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="500" fill="#0C447C">loop T</text>
+<rect x="520" y="80" width="100" height="30" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="570" y="100" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#185FA5">P^(1) · ω₁</text>
+<rect x="520" y="140" width="100" height="30" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="570" y="160" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#185FA5">P^(2) · ω₂</text>
+<rect x="520" y="200" width="100" height="30" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="570" y="220" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#185FA5">P^(3) · ω₃</text>
+<rect x="520" y="250" width="100" height="30" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="570" y="270" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#185FA5">P^(T) · ω_T</text>
+<rect x="540" y="320" width="100" height="40" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/>
+<text x="590" y="345" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#633806">reward</text>
+<line x1="460" y1="80" x2="516" y2="95" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)"/>
+<line x1="460" y1="140" x2="516" y2="155" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)"/>
+<line x1="460" y1="200" x2="516" y2="215" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)"/>
+<line x1="460" y1="260" x2="516" y2="265" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)"/>
+<line x1="590" y1="316" x2="585" y2="284" stroke="#185FA5" stroke-width="2" marker-end="url(#a3)"/>
+<line x1="575" y1="318" x2="572" y2="232" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)" stroke-dasharray="3 2"/>
+<line x1="560" y1="318" x2="560" y2="172" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)" stroke-dasharray="3 2"/>
+<line x1="545" y1="318" x2="545" y2="112" stroke="#185FA5" stroke-width="1.5" marker-end="url(#a3)" stroke-dasharray="3 2"/>
+<text x="520" y="385" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#26215C" font-style="italic">every loop gets weighted ∇ from reward</text>
+</svg>`;
+
+document.getElementById('fig-architecture').innerHTML = FIG_ARCH;
+document.getElementById('fig-credit').innerHTML = FIG_CREDIT;
+</script>
+
+</body>
+</html>

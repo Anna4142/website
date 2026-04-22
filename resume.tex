@@ -1,0 +1,120 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{geometry}
+\geometry{margin=0.75in}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% Section formatting with line
+\titleformat{\section}{\large\bfseries\scshape}{}{0em}{}[\titlerule]
+\titlespacing*{\section}{0pt}{10pt}{6pt}
+
+\setlist[itemize]{noitemsep, topsep=2pt, leftmargin=*, itemsep=1pt}
+\setlength{\parskip}{0pt}
+\pagenumbering{gobble}
+
+\begin{document}
+
+% Header
+\begin{center}
+    {\LARGE \textbf{Anushka Deshpande}}\\[4pt]
+    San Francisco, California $\cdot$ +1 437-217-4833 $\cdot$ \href{mailto:anushka.deshpande2300@gmail.com}{anushka.deshpande2300@gmail.com}\\[2pt]
+    \href{https://github.com/Anna4142}{GitHub} $\cdot$ \href{https://www.linkedin.com/in/anushka-d-4140061bb}{LinkedIn} $\cdot$ \href{https://anna4142.github.io/website}{Website}
+\end{center}
+
+\section{Education}
+\textbf{University of Toronto}, MSc Applied Computing - AI Track \hfill \textit{Sep 2024 -- Dec 2025}\\
+Relevant Coursework: Large Language Models for Ubiquitous Computing, Software Engineering for ML, Imitation Learning
+
+\vspace{6pt}
+\textbf{Technion -- Israel Institute of Technology}, MSc Computational Neuroscience \hfill \textit{2022 -- 2024}\\
+Advisors: Dr. Sarah Keren, Dr. Ben Engelhard\\
+Thesis: \textit{Exploring Computational and Behavioral Dynamics in Social Decision-Making via RL} \href{https://drive.google.com/file/d/1rFa0IbgcpIFTfLp23BFAhulSYonrGHEX/view}{\texttt{[Link]}}\\
+Relevant Coursework: Natural Language Processing, Deep Learning, AI and Robotics, Multi-Agent RL, Geometric Deep Learning
+
+\vspace{6pt}
+\textbf{Tel Aviv University}, BSc Electrical Engineering \hfill \textit{2018 -- 2022}\\
+Specialization: \textbf{Computer Architecture and VLSI Design}\\
+Relevant Coursework: Data Structures \& Algorithms, Signal Processing, Computer Architecture
+
+\section{Experience}
+
+\textbf{Arcee AI}, Research AI Engineer \hfill April 2025 -- Present
+\begin{itemize}
+    \item Post-training team released \href{https://github.com/arcee-ai/trinity-large-tech-report/blob/main/Arcee\%20Trinity\%20Large.pdf}{Trinity Large}, a 400B parameter model with 13B active parameters
+    \item Post-training research on multi-hop reasoning using RL and SFT techniques for LLMs
+    \item Developed sandboxed RL environments for various tool-calling tasks, enabling structured interaction training
+    \item Trained a 1.7B parameter model achieving >75\% accuracy across a suite of text-to-SQL benchmarks
+    \item Built synthetic data generation pipelines for various tool calling tasks and ran evals on various benchmarks
+\end{itemize}
+
+\textbf{Luna Media}, Lead Data Scientist \hfill Feb 2024 -- Sep 2024
+\begin{itemize}
+    \item Developed time series (ARIMA, SARIMA) for ad bidding optimization
+    \item Achieved 20\% win rate improvement and 15\% reduction in cost-per-acquisition (CPA) through bid optimization
+    \item Deployed and maintained CI/CD pipelines
+    \item Conducted rigorous A/B tests to validate model improvements
+\end{itemize}
+
+\section{Publications}
+\begin{enumerate}[label={[\arabic*]}]
+    \item \textbf{Arcee AI Post-Training Team}, ``Trinity Large: A 400B Parameter Model with 13B Active Parameters,'' \textit{Technical Report}, 2025. \href{https://github.com/arcee-ai/trinity-large-tech-report/blob/main/Arcee\%20Trinity\%20Large.pdf}{\texttt{[Paper]}}
+    
+    \item \textbf{A. Deshpande}, R. Faulkner (Google DeepMind), J. Leibo (Google DeepMind), Z. Jin (UofT), ``GovSim-ELECT: Elections in AI Societies,'' \textit{COLM 2025; Under Review at ARR}. \href{https://drive.google.com/file/d/1EMZmIa8oHfhfsRJN0OmWRZy8Zdq1q2Mz/view}{\texttt{[Paper]}}
+    
+    \item N. Keren, \textbf{A. Deshpande}, M. Holtzman, B. Engelhard, ``Toward Investigation of the Neural Basis of Social Decision-Making,'' \textit{Poster at Janelia Research Campus \& Israel Society for Neuroscience}, 2024. \href{https://mcn25-hhmi.ipostersessions.com/default.aspx?s=9A-BC-53-DD-EC-6F-BB-03-E9-38-BA-F8-CE-47-8C-06&guestview=true}{\texttt{[Poster]}}
+
+    \item \textbf{A. Deshpande}, ``Strategic Decision Making in Biological and Artificial Brains,'' \textit{bioRxiv preprint}, 2025. \href{https://doi.org/10.1101/2025.02.17.638746}{\texttt{[Paper]}}
+\end{enumerate}
+
+
+
+\section{Awards \& Honors}
+
+\vspace{4pt}
+\textbf{Advanced Deep Learning Summer School (High Honours)}, University of Oxford \hfill \textit{Aug 2023}\\
+Selective program covering unsupervised learning, graph neural networks, and reinforcement learning
+
+\vspace{4pt}
+\textbf{Merit-based Full Scholarship}, Tel Aviv University \hfill \textit{2018 -- 2022}\\
+Awarded by TATA Foundation and Government of Israel
+
+\section{Selected Projects}
+
+\textbf{Advanced Metamorphic Testing of Vision-Language Models} -- University of Toronto \hfill \textit{Dec 2024}
+\begin{itemize}
+    \item Developed automated pipeline using inpainting techniques for metamorphic testing on VLMs (CLIP, BLIP-2)
+    \item Evaluated model robustness across 1000+ transformed images, identifying critical failure modes\href{https://drive.google.com/file/d/1nhbsyuus_rYD7qDcyPvhLffOfqUT33-u/view?usp=sharing}{\texttt{[Link]}}
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Multi-Agent RL for Urban Energy Optimization} -- Technion \hfill \textit{Jul -- Sep 2023}
+\begin{itemize}
+    \item Built GNN with Transformer-based communication module for distributed energy management
+    \item Achieved 15\% reduction in carbon footprint across simulated city districts \href{https://drive.google.com/file/d/1HLrYvtaLiHNwZq8PY9ZQmY0qOtKT8sr6/view?usp=drive_link}{\texttt{[Link]}}
+\end{itemize}
+
+
+\vspace{4pt}
+\textbf{Offline Reinforcement Learning-Based Human Guide Robot for Visually Impaired
+Navigation} -- Technion \hfill \textit{Jul -- Sep 2023}
+\begin{itemize}
+ \href{https://drive.google.com/file/d/1HLrYvtaLiHNwZq8PY9ZQmY0qOtKT8sr6/view?usp=drive_link}{\texttt{[Link]}}
+\end{itemize}
+
+\section{Technical Skills}
+\textbf{Languages:} Python, SQL, JavaScript, Rust, C++\\
+\textbf{LLM Post-Training:} SFT/LoRA, RLHF, RL-Infra (VERL Pipelines, NeMo RL, SkyRL), Synthetic Data Generation, Prompt Engineering, Evals\\
+\textbf{ML/DL:} PyTorch, TensorFlow, Deep RL (PPO, DQN, Actor-Critic), Multi-Agent RL, GNNs
+
+\end{document}
